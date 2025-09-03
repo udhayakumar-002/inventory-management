@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory History{% endblock %}
+
+{% block page_title %}Inventory History{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title m-0">Stock Movement History</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if stock_history %}
+                            {% for history in stock_history %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ history.date }}</td>
+                                <td>{{ history.product }}</td>
+                                <td>
+                                    {% if history.type == 'in' %}
+                                        <span class="badge bg-success">Stock In</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Stock Out</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ history.quantity }}</td>
+                                <td>{{ history.remarks }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">No history found</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales{% endblock %}
+
+{% block page_title %}Sales Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="card-title m-0">Sales List</h4>
+            <a href="#" class="btn btn-primary">New Sale</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Invoice Number</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Total Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ invoice.number }}</td>
+                            <td>{{ invoice.customer }}</td>
+                            <td>{{ invoice.date }}</td>
+                            <td>${{ "%.2f"|format(invoice.total) }}</td>
+                            <td>
+                                <a href="{{ url_for('view_invoice', id=invoice.id) if 'view_invoice' in url_for else '#' }}" class="btn btn-sm btn-info">View</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No sales found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

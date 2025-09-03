@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Stock{% endblock %}
+
+{% block page_title %}Update Stock{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Stock Update Form</h4>
+        </div>
+        <div class="card-body">
+            <form id="stock-form" method="POST">
+                <div class="mb-3">
+                    <label for="product" class="form-label">Product</label>
+                    <select class="form-control" id="product" name="product_id" required {% if product %}disabled{% endif %}>
+                        <option value="">Select Product</option>
+                        {% for prod in products %}
+                        <option value="{{ prod.id }}" 
+                            {% if product and product.id == prod.id %}selected{% endif %}>
+                            {{ prod.name }} (Current Stock: {{ prod.stock }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantity</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" required>
+                </div>
+                <div class="mb-3">
+                    <label for="type" class="form-label">Type</label>
+                    <select class="form-control" id="type" name="type" required>
+                        <option value="in">Stock In</option>
+                        <option value="out">Stock Out</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="remarks" class="form-label">Remarks</label>
+                    <textarea class="form-control" id="remarks" name="remarks" rows="3"></textarea>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('inventory') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function() {
+    $('#stock-form').submit(function(e) {
+        e.preventDefault();
+        var form = $(this);
+        $.ajax({
+            url: "{{ url_for('manage_stock', id=product.id if product else none) }}",
+            method: 'POST',
+            data: form.serialize(),
+            success: function(resp) {
+                if (resp.status === 'success') {
+                    window.location.href = "{{ url_for('inventory') }}";
+                } else {
+                    alert(resp.msg || 'Failed to update stock');
+                }
+            },
+            error: function() {
+                alert('An error occurred');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

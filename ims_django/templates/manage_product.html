@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Product{% endblock %}
+
+{% block page_title %}
+    {% if product %}Edit Product{% else %}Add New Product{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Product Form</h4>
+        </div>
+        <div class="card-body">
+            <form id="product-form" method="POST">
+                <div class="mb-3">
+                    <label for="code" class="form-label">Product Code</label>
+                    <input type="text" class="form-control" id="code" name="code" 
+                           value="{{ product.code if product else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="{{ product.name if product else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-control" id="category" name="category_id" required>
+                        <option value="">Select Category</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" 
+                            {% if product and product.category_id == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="price" class="form-label">Price</label>
+                    <input type="number" step="0.01" class="form-control" id="price" name="price" 
+                           value="{{ product.price if product else '' }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="stock" class="form-label">Initial Stock</label>
+                    <input type="number" class="form-control" id="stock" name="stock" 
+                           value="{{ product.stock if product else '0' }}" required>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('products_page') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(function() {
+    $('#product-form').submit(function(e) {
+        e.preventDefault();
+        var form = $(this);
+        $.ajax({
+            url: "{{ url_for('manage_product', id=product.id if product else none) }}",
+            method: 'POST',
+            data: form.serialize(),
+            success: function(resp) {
+                if (resp.status === 'success') {
+                    window.location.href = "{{ url_for('products_page') }}";
+                } else {
+                    alert(resp.msg || 'Failed to save product');
+                }
+            },
+            error: function() {
+                alert('An error occurred');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
