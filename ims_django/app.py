@@ -4,7 +4,8 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
+# Use environment variable for secret key in production
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # Mock database (replace with real database later)
 users = {
@@ -24,6 +25,7 @@ categories = [
     Category(2, "Groceries", "Food and household items", True),
     Category(3, "Clothing", "Apparel and accessories", True)
 ]
+
 class Product:
     def __init__(self, id, code, name, category, price, stock):
         self.id = id
@@ -276,15 +278,13 @@ def utility_processor():
         'datetime': datetime,
     }
 
+# Health check endpoint for Render
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "healthy"})
+
 if __name__ == '__main__':
-    # Ensure static and template directories exist
-    os.makedirs('static/default', exist_ok=True)
-    os.makedirs('templates', exist_ok=True)
-    
-    # Copy logo if it doesn't exist
-    if os.path.exists('media/default/logo.png') and not os.path.exists('static/default/logo.png'):
-        os.makedirs('static/default', exist_ok=True)
-        import shutil
-        shutil.copy('media/default/logo.png', 'static/default/logo.png')
-    
-    app.run(debug=True)
+    # Only run in debug mode locally
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    app.run(host='0.0.0.0', port=port, debug=debug)
