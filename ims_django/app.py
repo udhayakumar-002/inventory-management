@@ -9,7 +9,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 
 # Mock database (replace with real database later)
 users = {
-    "admin": {"password": "password123", "name": "Administrator"}
+    "admin": {"password": "password123", "name": "Administrator", "username": "admin"}
 }
 
 class Category:
@@ -27,11 +27,12 @@ categories = [
 ]
 
 class Product:
-    def __init__(self, id, code, name, category, price, stock):
+    def __init__(self, id, code, name, category, category_id, price, stock):
         self.id = id
         self.code = code
         self.name = name
         self.category = category
+        self.category_id = category_id
         self.price = price
         self.stock = stock
 
@@ -43,11 +44,11 @@ class Invoice:
         self.date = date
         self.total = total
 
-# Mock data
+# Mock data - Fixed to include category_id
 products = [
-    Product(1, "P001", "Laptop", "Electronics", 999.99, 10),
-    Product(2, "P002", "Mouse", "Electronics", 29.99, 50),
-    Product(3, "P003", "Keyboard", "Electronics", 49.99, 30)
+    Product(1, "P001", "Laptop", "Electronics", 1, 999.99, 10),
+    Product(2, "P002", "Mouse", "Electronics", 1, 29.99, 50),
+    Product(3, "P003", "Keyboard", "Electronics", 1, 49.99, 30)
 ]
 
 invoices = [
@@ -71,7 +72,7 @@ def login_required(f):
 def login_page():
     if 'user' in session:
         return redirect(url_for('home_page'))
-    return render_template('login.html')
+    return render_template('login.html', page="login")
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -91,7 +92,7 @@ def logout():
 @app.route('/home')
 @login_required
 def home_page():
-    return render_template('home.html', page="home")
+    return render_template('home.html', page="home", categories=categories, products=products, invoices=invoices)
 
 @app.route('/category')
 @login_required
@@ -121,7 +122,8 @@ def inventory_history():
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', page="profile", user=users[session['user']])
+    user_data = users[session['user']]
+    return render_template('profile.html', page="profile", user=user_data, products=products, invoices=invoices)
 
 # Category Management
 @app.route('/manage_category', methods=['GET', 'POST'])
@@ -175,13 +177,14 @@ def manage_product(id=None):
             product.code = code
             product.name = name
             product.category = category.name if category else ''
+            product.category_id = category_id
             product.price = price
             product.stock = stock
             msg = "Product updated successfully"
         else:
             # Create new product
             new_id = max(prod.id for prod in products) + 1 if products else 1
-            new_product = Product(new_id, code, name, category.name if category else '', price, stock)
+            new_product = Product(new_id, code, name, category.name if category else '', category_id, price, stock)
             products.append(new_product)
             msg = "Product created successfully"
             
@@ -202,7 +205,7 @@ def manage_stock(id=None):
         product_id = int(request.form.get('product_id'))
         quantity = int(request.form.get('quantity'))
         stock_type = request.form.get('type')
-        remarks = request.form.get('remarks')
+        remarks = request.form.get('remarks', '')
         
         product = next((prod for prod in products if prod.id == product_id), None)
         
@@ -215,6 +218,7 @@ def manage_stock(id=None):
                 else:
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return jsonify({"status": "failed", "msg": "Insufficient stock"})
+                    flash("Insufficient stock", "error")
                     return redirect(url_for('inventory'))
             
             # Add to stock history
@@ -228,6 +232,7 @@ def manage_stock(id=None):
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({"status": "success", "msg": "Stock updated successfully"})
+            flash("Stock updated successfully", "success")
             return redirect(url_for('inventory'))
             
     return render_template('manage_stock.html', product=product, products=products)
@@ -252,21 +257,49 @@ def delete_product(id):
         return jsonify({"status": "success", "msg": "Product deleted successfully"})
     return jsonify({"status": "failed", "msg": "Product not found"}), 404
 
+# Invoice view route (referenced in sales.html)
+@app.route('/invoice/<int:id>')
+@login_required
+def view_invoice(id):
+    invoice = next((inv for inv in invoices if inv.id == id), None)
+    if not invoice:
+        flash("Invoice not found", "error")
+        return redirect(url_for('sales'))
+    return render_template('view_invoice.html', invoice=invoice)
+
 # Profile Management
 @app.route('/manage_profile', methods=['GET', 'POST'])
 @login_required
 def manage_profile():
     if request.method == 'POST':
-        # Handle profile updates
-        pass
-    return render_template('manage_profile.html')
+        name = request.form.get('name')
+        if name:
+            users[session['user']]['name'] = name
+            flash("Profile updated successfully", "success")
+        return redirect(url_for('profile'))
+    
+    user_data = users[session['user']]
+    return render_template('manage_profile.html', user=user_data)
 
 @app.route('/update_password', methods=['GET', 'POST'])
 @login_required
 def update_password():
     if request.method == 'POST':
-        # Handle password updates
-        pass
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if users[session['user']]['password'] != current_password:
+            flash("Current password is incorrect", "error")
+        elif new_password != confirm_password:
+            flash("New passwords do not match", "error")
+        elif len(new_password) < 6:
+            flash("Password must be at least 6 characters long", "error")
+        else:
+            users[session['user']]['password'] = new_password
+            flash("Password updated successfully", "success")
+            return redirect(url_for('profile'))
+    
     return render_template('update_password.html')
 
 # Context processor for template variables
@@ -282,6 +315,15 @@ def utility_processor():
 @app.route('/health')
 def health_check():
     return jsonify({"status": "healthy"})
+
+# Error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     # Only run in debug mode locally
