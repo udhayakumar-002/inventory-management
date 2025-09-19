@@ -33,7 +33,7 @@
                             <td>{{ invoice.date }}</td>
                             <td>${{ "%.2f"|format(invoice.total) }}</td>
                             <td>
-                                <a href="{{ url_for('view_invoice', id=invoice.id) if 'view_invoice' in url_for else '#' }}" class="btn btn-sm btn-info">View</a>
+                                <a href="{{ url_for('view_invoice', id=invoice.id) }}" class="btn btn-sm btn-info">View</a>
                             </td>
                         </tr>
                         {% else %}
