@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}New Sale{% endblock %}
+
+{% block page_title %}Create New Sale{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">New Sale Details</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('new_sale') }}" id="saleForm">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="customer" class="form-label">Customer Name</label>
+                        <input type="text" class="form-control" id="customer" name="customer" required>
+                    </div>
+                </div>
+                
+                <div class="product-list">
+                    <div class="product-item row mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label">Product</label>
+                            <select class="form-select product-select" name="products[]" required>
+                                <option value="">Select Product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}" data-price="{{ product.price }}" data-stock="{{ product.stock }}">
+                                    {{ product.name }} (Stock: {{ product.stock }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" class="form-control quantity-input" name="quantities[]" min="1" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Amount</label>
+                            <input type="text" class="form-control amount-display" readonly>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label d-block">&nbsp;</label>
+                            <button type="button" class="btn btn-danger remove-product">×</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-secondary" id="addProduct">Add Product</button>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6 offset-md-6">
+                        <div class="text-end">
+                            <h5>Total Amount: $<span id="totalAmount">0.00</span></h5>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-end">
+                    <a href="{{ url_for('sales') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create Sale</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productList = document.querySelector('.product-list');
+    const addProductBtn = document.getElementById('addProduct');
+    const totalAmountDisplay = document.getElementById('totalAmount');
+    
+    function updateAmount(row) {
+        const select = row.querySelector('.product-select');
+        const quantity = row.querySelector('.quantity-input');
+        const amountDisplay = row.querySelector('.amount-display');
+        
+        if (select.value && quantity.value) {
+            const price = parseFloat(select.selectedOptions[0].dataset.price);
+            const amount = price * parseInt(quantity.value);
+            amountDisplay.value = amount.toFixed(2);
+        } else {
+            amountDisplay.value = '0.00';
+        }
+        updateTotalAmount();
+    }
+    
+    function updateTotalAmount() {
+        const amounts = [...document.querySelectorAll('.amount-display')];
+        const total = amounts.reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+        totalAmountDisplay.textContent = total.toFixed(2);
+    }
+    
+    function addProductRow() {
+        const template = document.querySelector('.product-item').cloneNode(true);
+        template.querySelector('.product-select').value = '';
+        template.querySelector('.quantity-input').value = '';
+        template.querySelector('.amount-display').value = '';
+        productList.appendChild(template);
+        
+        setupRowEvents(template);
+    }
+    
+    function setupRowEvents(row) {
+        const select = row.querySelector('.product-select');
+        const quantity = row.querySelector('.quantity-input');
+        const removeBtn = row.querySelector('.remove-product');
+        
+        select.addEventListener('change', () => updateAmount(row));
+        quantity.addEventListener('input', () => {
+            const option = select.selectedOptions[0];
+            if (option) {
+                const stock = parseInt(option.dataset.stock);
+                if (parseInt(quantity.value) > stock) {
+                    quantity.value = stock;
+                    alert('Quantity cannot exceed available stock!');
+                }
+            }
+            updateAmount(row);
+        });
+        
+        removeBtn.addEventListener('click', () => {
+            if (document.querySelectorAll('.product-item').length > 1) {
+                row.remove();
+                updateTotalAmount();
+            }
+        });
+    }
+    
+    // Setup initial row
+    setupRowEvents(document.querySelector('.product-item'));
+    
+    // Add product button
+    addProductBtn.addEventListener('click', addProductRow);
+    
+    // Form submission
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+        const products = [...document.querySelectorAll('.product-select')];
+        const quantities = [...document.querySelectorAll('.quantity-input')];
+        
+        if (!products.some(select => select.value)) {
+            e.preventDefault();
+            alert('Please select at least one product');
+            return;
+        }
+        
+        if (products.some((select, i) => {
+            const quantity = parseInt(quantities[i].value);
+            const stock = parseInt(select.selectedOptions[0].dataset.stock);
+            return quantity > stock;
+        })) {
+            e.preventDefault();
+            alert('One or more products exceed available stock!');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

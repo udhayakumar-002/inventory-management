@@ -114,6 +114,49 @@ def inventory():
 def sales():
     return render_template('sales.html', page="sales", invoices=invoices)
 
+@app.route('/new_sale', methods=['GET', 'POST'])
+@login_required
+def new_sale():
+    if request.method == 'POST':
+        customer = request.form.get('customer')
+        product_ids = request.form.getlist('products[]')
+        quantities = request.form.getlist('quantities[]')
+        
+        # Calculate total amount and update stock
+        total_amount = 0
+        for i in range(len(product_ids)):
+            product_id = int(product_ids[i])
+            quantity = int(quantities[i])
+            
+            product = next((p for p in products if p.id == product_id), None)
+            if product:
+                if product.stock < quantity:
+                    flash("Insufficient stock for " + product.name, "error")
+                    return redirect(url_for('new_sale'))
+                
+                total_amount += product.price * quantity
+                product.stock -= quantity
+                
+                # Add to stock history
+                stock_history.append({
+                    'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'product': product.name,
+                    'type': 'out',
+                    'quantity': quantity,
+                    'remarks': f'Sale to {customer}'
+                })
+        
+        # Create new invoice
+        new_id = max(inv.id for inv in invoices) + 1 if invoices else 1
+        invoice_number = f"INV-{new_id:03d}"
+        new_invoice = Invoice(new_id, invoice_number, customer, datetime.now().strftime('%Y-%m-%d'), total_amount)
+        invoices.append(new_invoice)
+        
+        flash("Sale created successfully", "success")
+        return redirect(url_for('sales'))
+    
+    return render_template('new_sale.html', page="sales", products=products)
+
 @app.route('/inventory-history')
 @login_required
 def inventory_history():
