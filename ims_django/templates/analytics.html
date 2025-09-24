@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - IMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: none;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .stats-card.blue { border-left: 5px solid #007bff; }
+        .stats-card.green { border-left: 5px solid #28a745; }
+        .stats-card.orange { border-left: 5px solid #ffc107; }
+        .stats-card.cyan { border-left: 5px solid #17a2b8; }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            letter-spacing: -1px;
+        }
+        
+        .stats-card.blue .stats-number { color: #007bff; }
+        .stats-card.green .stats-number { color: #28a745; }
+        .stats-card.orange .stats-number { color: #ffc107; }
+        .stats-card.cyan .stats-number { color: #17a2b8; }
+        
+        .stats-label {
+            color: #6c757d;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: none;
+            margin-bottom: 30px;
+        }
+        
+        .chart-title {
+            color: #495057;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: between;
+        }
+        
+        .chart-title i {
+            margin-right: 10px;
+        }
+        
+        .page-header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: none;
+        }
+        
+        .heatmap-cell {
+            display: inline-block;
+            margin: 3px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            min-width: 120px;
+            font-size: 0.9rem;
+        }
+        
+        .refresh-btn {
+            border: none;
+            background: #f8f9fa;
+            color: #6c757d;
+            border-radius: 6px;
+            padding: 8px 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .rupee-symbol {
+            font-weight: 600;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation matching your existing theme -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('home_page') }}">
+                <i class="fas fa-warehouse me-2"></i>IMS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home_page') }}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('category') }}">
+                            <i class="fas fa-tags me-1"></i>Categories
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('products_page') }}">
+                            <i class="fas fa-box me-1"></i>Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('inventory') }}">
+                            <i class="fas fa-warehouse me-1"></i>Inventory
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('sales') }}">
+                            <i class="fas fa-chart-line me-1"></i>Sales
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('analytics') }}">
+                            <i class="fas fa-chart-bar me-1"></i>Analytics
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ session.user_data.name if session.user_data else 'Administrator' }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">
+                                <i class="fas fa-user-circle me-2"></i>Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('update_password') }}">
+                                <i class="fas fa-key me-2"></i>Change Password
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid py-4">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2 text-gray-800">
+                        <i class="fas fa-chart-bar me-3"></i>Analytics Dashboard
+                    </h1>
+                    <p class="mb-0 text-muted">Comprehensive business intelligence and data visualization</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-sm" onclick="loadAllData()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards Row (matching your home page style) -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card blue">
+                    <div class="stats-number rupee-symbol" id="totalRevenue">₹0</div>
+                    <div class="stats-label">Total Revenue</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card green">
+                    <div class="stats-number rupee-symbol" id="totalProfit">₹0</div>
+                    <div class="stats-label">Total Profit</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card orange">
+                    <div class="stats-number rupee-symbol" id="inventoryValue">₹0</div>
+                    <div class="stats-label">Inventory Value</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card cyan">
+                    <div class="stats-number" id="topProductSales">0</div>
+                    <div class="stats-label">Units Sold (Top Product)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="row">
+            <!-- Sales Performance Chart -->
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="chart-title">
+                            <i class="fas fa-line-chart text-primary"></i>
+                            Sales Performance (Last 30 Days)
+                        </div>
+                        <button class="refresh-btn" onclick="refreshSalesChart()" title="Refresh Chart">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Distribution -->
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i class="fas fa-pie-chart text-success"></i>
+                        Category Distribution
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="row">
+            <!-- Inventory Levels -->
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i class="fas fa-boxes text-warning"></i>
+                        Inventory Levels
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profit/Loss Analysis -->
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i class="fas fa-chart-area text-info"></i>
+                        Profit/Loss Analysis (Last 12 Months)
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="profitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 3 -->
+        <div class="row">
+            <!-- Top Products -->
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i class="fas fa-star text-danger"></i>
+                        Top Selling Products
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Heat Map -->
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <div class="chart-title">
+                        <i class="fas fa-fire text-danger"></i>
+                        Product Performance Heat Map
+                    </div>
+                    <div id="heatMapContainer" class="mt-3">
+                        <div class="text-center py-4">
+                            <div class="loading-spinner"></div>
+                            <p class="text-muted mt-2">Loading heat map...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Chart instances
+        let salesChart, inventoryChart, profitChart, topProductsChart, categoryChart;
+
+        // Indian number formatting function
+        function formatIndianCurrency(amount) {
+            if (amount >= 10000000) {
+                return '₹' + (amount / 10000000).toFixed(2) + ' Cr';
+            } else if (amount >= 100000) {
+                return '₹' + (amount / 100000).toFixed(2) + ' L';
+            } else {
+                return '₹' + amount.toLocaleString('en-IN');
+            }
+        }
+
+        function formatIndianNumber(number) {
+            return number.toLocaleString('en-IN');
+        }
+
+        // Initialize all charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadAllData();
+        });
+
+        function initializeCharts() {
+            // Sales Performance Chart
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Daily Sales',
+                        data: [],
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#007bff',
+                        pointBorderColor: '#007bff',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Sales: ' + formatIndianCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatIndianCurrency(value);
+                                }
+                            },
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Inventory Levels Chart
+            const inventoryCtx = document.getElementById('inventoryChart').getContext('2d');
+            inventoryChart = new Chart(inventoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Current Stock',
+                        data: [],
+                        backgroundColor: '#28a745',
+                        borderRadius: 4
+                    }, {
+                        label: 'Min Stock',
+                        data: [],
+                        backgroundColor: '#dc3545',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const product = context.label;
+                                    const dataset = context.dataset;
+                                    if (dataset.label === 'Current Stock') {
+                                        const value = context.raw * 100; // Assuming price per unit
+                                        return 'Value: ' + formatIndianCurrency(value);
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Profit/Loss Chart
+            const profitCtx = document.getElementById('profitChart').getContext('2d');
+            profitChart = new Chart(profitCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Cost',
+                        data: [],
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Profit',
+                        data: [],
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatIndianCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatIndianCurrency(value);
+                                }
+                            },
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Top Products Chart
+            const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+            topProductsChart = new Chart(topProductsCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Units Sold',
+                        data: [],
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8',
+                            '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#6c757d'
+                        ],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Units Sold: ' + formatIndianNumber(context.parsed.x);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e9ecef'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatIndianNumber(value);
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#e9ecef'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Category Distribution Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8',
+                            '#6f42c1', '#fd7e14', '#20c997', '#e83e8c', '#6c757d'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + formatIndianNumber(context.parsed) + ' products';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadAllData() {
+            loadSalesData();
+            loadInventoryData();
+            loadProfitLossData();
+            loadTopProductsData();
+            loadCategoryData();
+            loadMetrics();
+        }
+
+        function loadSalesData() {
+            fetch('/api/sales_performance')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => {
+                        const date = new Date(item.date);
+                        return date.toLocaleDateString('en-IN');
+                    });
+                    const salesData = data.map(item => item.sales);
+                    
+                    salesChart.data.labels = labels;
+                    salesChart.data.datasets[0].data = salesData;
+                    salesChart.update();
+                })
+                .catch(error => {
+                    console.error('Error loading sales data:', error);
+                });
+        }
+
+        function loadInventoryData() {
+            fetch('/api/inventory_levels')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.product.length > 15 ? 
+                        item.product.substring(0, 15) + '...' : item.product);
+                    const currentStock = data.map(item => item.current_stock);
+                    const minStock = data.map(item => item.min_stock);
+                    
+                    inventoryChart.data.labels = labels;
+                    inventoryChart.data.datasets[0].data = currentStock;
+                    inventoryChart.data.datasets[1].data = minStock;
+                    inventoryChart.update();
+                })
+                .catch(error => {
+                    console.error('Error loading inventory data:', error);
+                });
+        }
+
+        function loadProfitLossData() {
+            fetch('/api/profit_loss')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.month);
+                    const revenue = data.map(item => item.revenue);
+                    const cost = data.map(item => item.cost);
+                    const profit = data.map(item => item.profit);
+                    
+                    profitChart.data.labels = labels;
+                    profitChart.data.datasets[0].data = revenue;
+                    profitChart.data.datasets[1].data = cost;
+                    profitChart.data.datasets[2].data = profit;
+                    profitChart.update();
+                })
+                .catch(error => {
+                    console.error('Error loading profit/loss data:', error);
+                });
+        }
+
+        function loadTopProductsData() {
+            fetch('/api/top_products')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.name.length > 20 ? 
+                        item.name.substring(0, 20) + '...' : item.name);
+                    const soldData = data.map(item => item.sold);
+                    
+                    topProductsChart.data.labels = labels;
+                    topProductsChart.data.datasets[0].data = soldData;
+                    topProductsChart.update();
+
+                    // Generate heat map
+                    generateHeatMap(data);
+                })
+                .catch(error => {
+                    console.error('Error loading top products data:', error);
+                    generateHeatMap([]);
+                });
+        }
+
+        function loadCategoryData() {
+            fetch('/api/category_distribution')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.category);
+                    const values = data.map(item => item.products);
+                    
+                    categoryChart.data.labels = labels;
+                    categoryChart.data.datasets[0].data = values;
+                    categoryChart.update();
+                })
+                .catch(error => {
+                    console.error('Error loading category data:', error);
+                });
+        }
+
+        function loadMetrics() {
+            // Load key metrics
+            Promise.all([
+                fetch('/api/profit_loss').then(r => r.json()),
+                fetch('/api/inventory_levels').then(r => r.json()),
+                fetch('/api/top_products').then(r => r.json())
+            ]).then(([profitData, inventoryData, topProductsData]) => {
+                // Calculate total revenue
+                const totalRevenue = profitData.reduce((sum, item) => sum + item.revenue, 0);
+                document.getElementById('totalRevenue').textContent = formatIndianCurrency(totalRevenue);
+
+                // Calculate total profit
+                const totalProfit = profitData.reduce((sum, item) => sum + item.profit, 0);
+                document.getElementById('totalProfit').textContent = formatIndianCurrency(totalProfit);
+
+                // Calculate inventory value
+                const inventoryValue = inventoryData.reduce((sum, item) => sum + item.value, 0);
+                document.getElementById('inventoryValue').textContent = formatIndianCurrency(inventoryValue);
+
+                // Top product sales
+                const topProductSales = topProductsData.length > 0 ? topProductsData[0].sold : 0;
+                document.getElementById('topProductSales').textContent = formatIndianNumber(topProductSales);
+            }).catch(error => {
+                console.error('Error loading metrics:', error);
+                // Set default values if error
+                document.getElementById('totalRevenue').textContent = '₹0';
+                document.getElementById('totalProfit').textContent = '₹0';
+                document.getElementById('inventoryValue').textContent = '₹0';
+                document.getElementById('topProductSales').textContent = '0';
+            });
+        }
+
+        function generateHeatMap(topProductsData) {
+            const container = document.getElementById('heatMapContainer');
+            container.innerHTML = '';
+
+            if (topProductsData.length === 0) {
+                container.innerHTML = '<div class="text-center py-4"><p class="text-muted">No sales data available</p></div>';
+                return;
+            }
+
+            topProductsData.forEach((product, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell mb-2';
+                
+                // Color based on sales performance
+                const maxSold = Math.max(...topProductsData.map(p => p.sold));
+                const intensity = product.sold / maxSold;
+                const red = Math.floor(255 * intensity);
+                const green = Math.floor(255 * (1 - intensity));
+                
+                cell.style.backgroundColor = `rgb(${red}, ${green}, 50)`;
+                cell.textContent = `${product.name.substring(0, 10)}...`;
+                cell.title = `${product.name}: ${formatIndianNumber(product.sold)} units sold, Revenue: ${formatIndianCurrency(product.revenue || 0)}`;
+                
+                container.appendChild(cell);
+            });
+        }
+
+        function refreshSalesChart() {
+            const button = event.target;
+            const icon = button.querySelector('i');
+            
+            // Add loading state
+            icon.classList.add('fa-spin');
+            button.disabled = true;
+            
+            loadSalesData();
+            
+            // Remove loading state after 2 seconds
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+                button.disabled = false;
+            }, 2000);
+        }
+
+        // Auto-refresh every 5 minutes
+        setInterval(loadAllData, 300000);
+
+        // Add loading animation to refresh button
+        function showLoading() {
+            const refreshBtn = document.querySelector('.btn-primary');
+            const icon = refreshBtn.querySelector('i');
+            const text = refreshBtn.querySelector('span') || refreshBtn;
+            
+            icon.classList.add('fa-spin');
+            refreshBtn.disabled = true;
+            
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

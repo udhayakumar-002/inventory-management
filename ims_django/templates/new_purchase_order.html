@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Purchase Order{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('purchase_orders') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-shopping-cart me-2 text-primary"></i>Create Purchase Order
+                    </h2>
+                    <p class="text-muted mb-0">Generate a new purchase order for your suppliers</p>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        <!-- PO Header -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle me-2 text-primary"></i>Purchase Order Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Select Supplier *</label>
+                                <select name="supplier_id" class="form-select form-select-lg" required>
+                                    <option value="">Choose a supplier...</option>
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.id }}">
+                                        {{ supplier.name }}{% if supplier.company %} - {{ supplier.company }}{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a supplier.
+                                </div>
+                                {% if not suppliers %}
+                                <div class="form-text text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    No suppliers found. <a href="{{ url_for('manage_supplier') }}">Add a supplier first</a>.
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Expected Delivery Date</label>
+                                <input type="date" name="expected_date" class="form-control form-control-lg" 
+                                       min="{{ datetime.now().strftime('%Y-%m-%d') }}">
+                                <div class="form-text">When do you expect this order to be delivered?</div>
+                            </div>
+                        </div>
+
+                        <!-- Products Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-boxes me-2 text-success"></i>Order Items
+                                </h5>
+                            </div>
+                            <div class="col-12">
+                                <div id="orderItems">
+                                    <!-- Dynamic product rows will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" onclick="addOrderItem()">
+                                    <i class="fas fa-plus me-2"></i>Add Product
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Notes Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-sticky-note me-2 text-info"></i>Additional Information
+                                </h5>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-semibold">Notes & Special Instructions</label>
+                                <textarea name="notes" class="form-control" rows="4" 
+                                          placeholder="Enter any special instructions, delivery requirements, or notes for the supplier..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Total Section -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 offset-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Order Summary</h5>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Amount:</span>
+                                            <span class="fw-bold fs-4" id="totalAmount">₹0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3 justify-content-end">
+                            <a href="{{ url_for('purchase_orders') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                                <i class="fas fa-shopping-cart me-2"></i>Create Purchase Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let itemCount = 0;
+    const products = [
+        {% for product in products %}
+        {
+            id: {{ product.id }},
+            name: "{{ product.name }}",
+            code: "{{ product.code }}",
+            price: {{ product.price }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    function addOrderItem() {
+        itemCount++;
+        const orderItems = document.getElementById('orderItems');
+        
+        const itemHtml = `
+            <div class="row mb-3 order-item border rounded p-3" id="item-${itemCount}" style="background-color: #f8f9fa;">
+                <div class="col-md-4">
+                    <label class="form-label">Product</label>
+                    <select name="products[]" class="form-select" onchange="updateItemTotal(${itemCount})" required>
+                        <option value="">Select Product...</option>
+                        ${products.map(p => `<option value="${p.id}" data-name="${p.name}" data-price="${p.price}">${p.name} (${p.code})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" name="quantities[]" class="form-control" 
+                           min="1" step="1" onchange="updateItemTotal(${itemCount})" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Unit Cost (₹)</label>
+                    <input type="number" name="costs[]" class="form-control" 
+                           min="0" step="0.01" onchange="updateItemTotal(${itemCount})" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Total</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="text" class="form-control" readonly id="itemTotal-${itemCount}" value="0.00">
+                    </div>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-danger" onclick="removeOrderItem(${itemCount})" title="Remove Item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        orderItems.insertAdjacentHTML('beforeend', itemHtml);
+        updateSubmitButton();
+    }
+
+    function removeOrderItem(itemId) {
+        if (confirm('Are you sure you want to remove this item?')) {
+            document.getElementById(`item-${itemId}`).remove();
+            updateOrderTotal();
+            updateSubmitButton();
+        }
+    }
+
+    function updateItemTotal(itemId) {
+        const item = document.getElementById(`item-${itemId}`);
+        const quantity = parseFloat(item.querySelector('input[name="quantities[]"]').value) || 0;
+        const cost = parseFloat(item.querySelector('input[name="costs[]"]').value) || 0;
+        const total = quantity * cost;
+        
+        item.querySelector(`#itemTotal-${itemId}`).value = total.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        
+        updateOrderTotal();
+    }
+
+    function updateOrderTotal() {
+        const items = document.querySelectorAll('.order-item');
+        let total = 0;
+        
+        items.forEach(item => {
+            const quantity = parseFloat(item.querySelector('input[name="quantities[]"]').value) || 0;
+            const cost = parseFloat(item.querySelector('input[name="costs[]"]').value) || 0;
+            total += quantity * cost;
+        });
+        
+        document.getElementById('totalAmount').textContent = '₹' + total.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function updateSubmitButton() {
+        const items = document.querySelectorAll('.order-item');
+        const submitBtn = document.getElementById('submitBtn');
+        const supplierSelect = document.querySelector('select[name="supplier_id"]');
+        
+        let hasValidItems = false;
+        items.forEach(item => {
+            const productSelect = item.querySelector('select[name="products[]"]');
+            const quantityInput = item.querySelector('input[name="quantities[]"]');
+            const costInput = item.querySelector('input[name="costs[]"]');
+            
+            if (productSelect.value && quantityInput.value && costInput.value) {
+                hasValidItems = true;
+            }
+        });
+        
+        const hasSupplier = supplierSelect.value !== '';
+        
+        submitBtn.disabled = !(hasValidItems && hasSupplier);
+    }
+
+    // Auto-fill cost when product is selected
+    function setupProductSelection() {
+        document.addEventListener('change', function(e) {
+            if (e.target.matches('select[name="products[]"]')) {
+                const option = e.target.selectedOptions[0];
+                if (option && option.dataset.price) {
+                    const itemRow = e.target.closest('.order-item');
+                    const costInput = itemRow.querySelector('input[name="costs[]"]');
+                    costInput.value = parseFloat(option.dataset.price).toFixed(2);
+                    
+                    // Get the item ID from the row ID
+                    const itemId = itemRow.id.replace('item-', '');
+                    updateItemTotal(itemId);
+                }
+            }
+        });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add first item by default
+        addOrderItem();
+        
+        // Setup product selection auto-fill
+        setupProductSelection();
+        
+        // Update submit button when supplier changes
+        document.querySelector('select[name="supplier_id"]').addEventListener('change', updateSubmitButton);
+        
+        // Add event listeners to dynamically added elements
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('input[name="quantities[]"], input[name="costs[]"]')) {
+                updateSubmitButton();
+            }
+        });
+    });
+
+    // Form validation
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    // Check if we have at least one valid item
+                    const items = document.querySelectorAll('.order-item');
+                    let hasValidItem = false;
+                    
+                    items.forEach(item => {
+                        const productSelect = item.querySelector('select[name="products[]"]');
+                        const quantityInput = item.querySelector('input[name="quantities[]"]');
+                        const costInput = item.querySelector('input[name="costs[]"]');
+                        
+                        if (productSelect.value && quantityInput.value && costInput.value) {
+                            hasValidItem = true;
+                        }
+                    });
+                    
+                    if (!hasValidItem) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        alert('Please add at least one product with valid quantity and cost.');
+                        return;
+                    }
+                    
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+</script>
+{% endblock %}

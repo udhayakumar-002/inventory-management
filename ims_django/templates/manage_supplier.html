@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if supplier %}Edit{% else %}Add{% endif %} Supplier{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('suppliers') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-truck me-2 text-primary"></i>
+                        {% if supplier %}Edit Supplier{% else %}Add New Supplier{% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        {% if supplier %}Update supplier information and contact details{% else %}Create a new supplier profile{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        <!-- Basic Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-info-circle me-2 text-primary"></i>Basic Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Supplier Name *</label>
+                                <input type="text" name="name" class="form-control form-control-lg" 
+                                       value="{{ supplier.name if supplier }}" required>
+                                <div class="invalid-feedback">
+                                    Please provide a supplier name.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Company Name</label>
+                                <input type="text" name="company" class="form-control form-control-lg" 
+                                       value="{{ supplier.company if supplier }}">
+                                <div class="form-text">Optional - Leave empty for individual suppliers</div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-address-book me-2 text-success"></i>Contact Information
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                    <input type="email" name="email" class="form-control" 
+                                           value="{{ supplier.email if supplier }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Phone Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                    <input type="text" name="phone" class="form-control" 
+                                           value="{{ supplier.phone if supplier }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Contact Person</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user-tie"></i></span>
+                                    <input type="text" name="contact_person" class="form-control" 
+                                           value="{{ supplier.contact_person if supplier }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Payment Terms</label>
+                                <select name="payment_terms" class="form-select">
+                                    <option value="Cash" {% if supplier and supplier.payment_terms == 'Cash' %}selected{% endif %}>Cash on Delivery</option>
+                                    <option value="15 days" {% if supplier and supplier.payment_terms == '15 days' %}selected{% endif %}>15 Days Net</option>
+                                    <option value="30 days" {% if supplier and supplier.payment_terms == '30 days' %}selected{% elif not supplier %}selected{% endif %}>30 Days Net</option>
+                                    <option value="45 days" {% if supplier and supplier.payment_terms == '45 days' %}selected{% endif %}>45 Days Net</option>
+                                    <option value="60 days" {% if supplier and supplier.payment_terms == '60 days' %}selected{% endif %}>60 Days Net</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-map-marker-alt me-2 text-info"></i>Address Information
+                                </h5>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-semibold">Complete Address</label>
+                                <textarea name="address" class="form-control" rows="4" 
+                                          placeholder="Enter complete address including city, state, and PIN code">{{ supplier.address if supplier }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3 justify-content-end">
+                            <a href="{{ url_for('suppliers') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                {% if supplier %}Update Supplier{% else %}Create Supplier{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Form validation
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+</script>
+{% endblock %}

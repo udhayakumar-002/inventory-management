@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports & Analytics{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white">
+                    <h1 class="mb-2">
+                        <i class="fas fa-chart-line me-3"></i>Reports & Analytics
+                    </h1>
+                    <p class="mb-0 opacity-75">Generate comprehensive business reports and export data in PDF & Excel formats</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Dashboard -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                    <h3 class="mb-1">{{ format_currency_indian(total_sales or 0) }}</h3>
+                    <p class="mb-0">Total Sales</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-boxes fa-2x mb-2"></i>
+                    <h3 class="mb-1">{{ total_products or 0 }}</h3>
+                    <p class="mb-0">Total Products</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h3 class="mb-1">{{ low_stock_count or 0 }}</h3>
+                    <p class="mb-0">Low Stock Items</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3 class="mb-1">{{ total_customers or 0 }}</h3>
+                    <p class="mb-0">Total Customers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Generation Section -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-download me-2 text-primary"></i>Generate Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('generate_report') }}" class="needs-validation" novalidate>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Report Type *</label>
+                                <select name="report_type" class="form-select" required>
+                                    <option value="">Select Report Type</option>
+                                    <option value="sales">📊 Sales Report</option>
+                                    <option value="inventory">📦 Inventory Report</option>
+                                    <option value="profit">💰 Profit Analysis Report</option>
+                                    <option value="low_stock">⚠️ Low Stock Alert Report</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a report type.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Export Format</label>
+                                <select name="format" class="form-select">
+                                    <option value="pdf">📄 PDF Document</option>
+                                    <option value="excel">📊 Excel Spreadsheet</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">From Date</label>
+                                <input type="date" name="date_from" class="form-control">
+                                <div class="form-text">Leave empty for all data</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">To Date</label>
+                                <input type="date" name="date_to" class="form-control">
+                                <div class="form-text">Leave empty for all data</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-download me-2"></i>Generate & Download Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-rocket me-2 text-success"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('analytics') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-chart-bar me-2"></i>View Live Analytics
+                        </a>
+                        <a href="{{ url_for('suppliers') }}" class="btn btn-outline-success">
+                            <i class="fas fa-truck me-2"></i>Manage Suppliers
+                        </a>
+                        <a href="{{ url_for('customers') }}" class="btn btn-outline-info">
+                            <i class="fas fa-users me-2"></i>Manage Customers
+                        </a>
+                        <a href="{{ url_for('purchase_orders') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-shopping-cart me-2"></i>Purchase Orders
+                        </a>
+                        <a href="{{ url_for('barcode_scanner') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-qrcode me-2"></i>Barcode Scanner
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report History -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2 text-info"></i>Recent Reports
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-file-alt fa-2x mb-2"></i>
+                        <p class="mb-0">No recent reports</p>
+                        <small>Generate your first report above</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Descriptions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Report Types & Descriptions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-primary"><i class="fas fa-chart-line me-2"></i>Sales Report</h6>
+                                <p class="text-muted mb-0">Comprehensive sales analysis including invoice details, customer information, and revenue breakdown by date range.</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-success"><i class="fas fa-boxes me-2"></i>Inventory Report</h6>
+                                <p class="text-muted mb-0">Complete inventory status with current stock levels, valuations, and stock status for all products.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-info"><i class="fas fa-calculator me-2"></i>Profit Analysis Report</h6>
+                                <p class="text-muted mb-0">Detailed profit margins, cost analysis, and financial performance metrics for better business insights.</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert Report</h6>
+                                <p class="text-muted mb-0">Critical stock alerts for products below minimum levels, helping with reorder planning and stock management.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
