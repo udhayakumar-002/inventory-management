@@ -1,62 +1,38 @@
-# Core Flask Framework
-Flask==3.0.0
-Flask-SQLAlchemy==3.1.1
-Werkzeug==3.0.1
+# Core Flask Framework - Compatible versions
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Werkzeug==2.3.7
 
-# Database and ORM
+# Database ORM
 SQLAlchemy==2.0.23
 
-# Template Engine (comes with Flask but specified for clarity)
+# Template Engine
 Jinja2==3.1.2
 MarkupSafe==2.1.3
 
-# Data Analysis and Excel Export
-pandas==2.1.4
+# Data Analysis - Use newer pandas version compatible with Python 3.13
+pandas>=2.2.0
+numpy>=1.24.0
+
+# Excel Export
 openpyxl==3.1.2
-numpy==1.26.2
 
 # PDF Report Generation
-reportlab==4.0.7
-Pillow==10.1.0
+reportlab==4.0.4
 
-# QR Code and Barcode Generation (if using barcode features)
+# Image Processing
+Pillow==10.0.1
+
+# QR Code Generation (without pandas dependency issues)
 qrcode==7.4.2
-qrcode[pil]==7.4.2
 
-# Date and Time Handling
-python-dateutil==2.8.2
-
-# HTTP and URL Handling
-urllib3==2.1.0
-requests==2.31.0
-
-# Security and Password Hashing (included with Werkzeug but listed for clarity)
-bcrypt==4.1.2
-
-# Development and Debugging Tools (optional)
+# Environment Management
 python-dotenv==1.0.0
 
-# Additional Utility Libraries
+# Additional Flask utilities
 click==8.1.7
 itsdangerous==2.1.2
 blinker==1.7.0
 
-# For better JSON handling
-simplejson==3.19.2
-
-# For improved CSV handling
-csv-sniffer==0.3.4
-
-# Email functionality (if implementing email features)
-# Flask-Mail==0.9.1
-
-# Caching (optional for better performance)
-# Flask-Caching==2.1.0
-
-# API serialization (if building APIs)
-# marshmallow==3.20.2
-# Flask-Marshmallow==0.15.0
-
-# Background tasks (optional)
-# Celery==5.3.4
-# redis==5.0.1
+# Production Server
+gunicorn==21.2.0
